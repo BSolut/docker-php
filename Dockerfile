@@ -20,7 +20,7 @@ RUN echo deb http://httpredir.debian.org/debian stable main contrib >/etc/apt/so
         libgmp-dev \
         git\
         redis-server redis-tools \
-    && curl -fsSL https://dev.mysql.com/get/mysql-apt-config_0.7.3-1_all.deb -o /tmp/mysql.deb \
+    && curl -fsSL https://dev.mysql.com/get/mysql-apt-config_0.8.2-1_all.deb -o /tmp/mysql.deb \
     && DEBIAN_FRONTEND=noninteractive MYSQL_SERVER_VERSION=mysql-5.6 dpkg -i /tmp/mysql.deb \
     && rm /tmp/mysql.deb\
     && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-community-server \
@@ -69,6 +69,12 @@ ADD bsolut-php.ini /usr/local/etc/php/conf.d/
 ADD bsolut-xdebug.ini /usr/local/etc/php/conf.d/
 ADD mysql-tmpfs.cnf /etc/mysql/conf.d/mysql-tmpfs.cnf
 RUN chmod go-w /etc/mysql/conf.d/mysql-tmpfs.cnf && chown mysql /etc/mysql/conf.d/mysql-tmpfs.cnf
+
+ADD auth-key /
+RUN \
+  chmod 600 /auth-key && \  
+  echo "IdentityFile /auth-key" >> /etc/ssh/ssh_config && \  
+  echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
 
 ENTRYPOINT [ "/run.sh" ]
 
