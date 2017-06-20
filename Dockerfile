@@ -1,55 +1,37 @@
-FROM php:7.0-fpm
+FROM php:5.6-apache
 
-ENV TERM=xterm
+RUN a2enmod rewrite expires
 
-RUN echo deb http://httpredir.debian.org/debian stable main contrib >/etc/apt/sources.list \
-    && echo deb http://security.debian.org/ stable/updates main contrib >>/etc/apt/sources.list \
+# install the PHP extensions we need, also nodejs for sshapi
+RUN     echo deb http://httpredir.debian.org/debian stable main contrib >>/etc/apt/sources.list \
+    && echo deb http://security.debian.org/ stable/updates main contrib >>/etc/apt/sources.list \
+    && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y libpng12-dev libjpeg-dev locales supervisor git\
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y curl python-software-properties expect-dev \
     && curl -sL https://deb.nodesource.com/setup_4.x | bash - \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        libfreetype6-dev \
-        libjpeg62-turbo-dev \
-        libmcrypt-dev \
-        libpng12-dev \
-        zlib1g-dev \
-        libgeoip-dev \
-        python \
-        locales \
-        expect-dev \
-        geoip-bin geoip-database-contrib \
-        nodejs \
-        libgmp-dev \
-        git\
-        redis-server redis-tools \
-    && curl -fsSL https://dev.mysql.com/get/mysql-apt-config_0.8.2-1_all.deb -o /tmp/mysql.deb \
-    && DEBIAN_FRONTEND=noninteractive MYSQL_SERVER_VERSION=mysql-5.6 dpkg -i /tmp/mysql.deb \
-    && rm /tmp/mysql.deb\
-    && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-community-server \
-    && ln -s /usr/include/x86_64-linux-gnu/gmp.h /usr/include/gmp.h \
-    && docker-php-ext-install -j$(nproc) iconv mcrypt \
-    && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
-    && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql mysqli bcmath mbstring zip gmp \
-    && DEBIAN_FRONTEND=noninteractive MYSQL_SERVER_VERSION=mysql-5.6 apt-get upgrade -y\
+    && DEBIAN_FRONTEND=noninteractive  apt-get -y install nodejs \
+    && docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr \
+    && docker-php-ext-install gd mysqli opcache \
+    && DEBIAN_FRONTEND=noninteractive apt-get -y upgrade \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# set recommended PHP.ini settings
+# see https://secure.php.net/manual/en/opcache.installation.php
+RUN { \
+        echo 'opcache.memory_consumption=128'; \
+        echo 'opcache.interned_strings_buffer=8'; \
+        echo 'opcache.max_accelerated_files=4000'; \
+        echo 'opcache.revalidate_freq=0'; \
+        echo 'opcache.fast_shutdown=1'; \
+        echo 'opcache.enable_cli=1'; \
+    } > /usr/local/etc/php/conf.d/opcache-recommended.ini
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-RUN pecl install apcu apcu_bc-beta && docker-php-ext-enable apcu  && docker-php-ext-enable apc \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-RUN pecl install xdebug && docker-php-ext-enable xdebug \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-RUN pecl install geoip-beta && docker-php-ext-enable geoip \
-    && echo "<?php var_dump(geoip_record_by_name('141.30.225.1')); " | php  | grep Dresden -cq || (echo "Geo not working" && exit 1) \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-COPY *.sh /
-RUN chmod u+rwx /*.sh
-
+ADD npm-exp.sh /npm-exp.sh
 RUN npm set registry https://npm.bsolut.com \
     && npm config set always-auth true \
     && /npm-exp.sh "npm login " docker insecure docker@bsolut.com \
-    && npm install node-tcp-relay pm2 less grunt gulp -g
+    && npm install less
 
 RUN echo -e "de_DE.UTF-8 UTF-8\nde_DE ISO-8859-1\nde_DE@euro ISO-8859-15\nen_US.UTF-8 UTF-8" >> /etc/locale.gen
 RUN locale-gen && /usr/sbin/update-locale LANG=en_US.UTF-8
@@ -57,24 +39,16 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 
-
-RUN mv /usr/local/etc/php/conf.d/docker-php-ext-apc.ini /usr/local/etc/php/conf.d/zz-docker-php-ext-apc.ini
-
-VOLUME /var/lib/redis
-
-EXPOSE 9000 9001 9002 6379
-
-ADD zzz-bsolut-fpm.conf /usr/local/etc/php-fpm.d/
-ADD bsolut-php.ini /usr/local/etc/php/conf.d/
-ADD bsolut-xdebug.ini /usr/local/etc/php/conf.d/
-ADD mysql-tmpfs.cnf /etc/mysql/conf.d/mysql-tmpfs.cnf
-RUN chmod go-w /etc/mysql/conf.d/mysql-tmpfs.cnf && chown mysql /etc/mysql/conf.d/mysql-tmpfs.cnf
-
 ADD auth-key /
 RUN \
-  chmod 600 /auth-key && \  
-  echo "IdentityFile /auth-key" >> /etc/ssh/ssh_config && \  
+  chmod 600 /auth-key &&\
+  echo "IdentityFile /auth-key" >> /etc/ssh/ssh_config && \
   echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
 
-ENTRYPOINT [ "/run.sh" ]
+ADD apache.conf /etc/supervisor/conf.d/apache.conf
+
+EXPOSE 80 8080 3000
+
+CMD ["/usr/bin/supervisord", "-n"]
+
 
