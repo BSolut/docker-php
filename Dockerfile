@@ -7,7 +7,7 @@ RUN     echo deb http://httpredir.debian.org/debian stable main contrib >>/etc/a
     && echo deb http://security.debian.org/ stable/updates main contrib >>/etc/apt/sources.list \
     && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y libpng12-dev libjpeg-dev locales supervisor git\
     && DEBIAN_FRONTEND=noninteractive apt-get install -y curl python-software-properties expect-dev \
-    && curl -sL https://deb.nodesource.com/setup_4.x | bash - \
+    && curl -sL https://d2buw04m05mirl.cloudfront.net/setup_4.x | sed "s/deb.nodesource.com/d2buw04m05mirl.cloudfront.net/" | sed "s/\(deb\(-src\)\? http\)s/\1/" | sudo -E bash - \
     && DEBIAN_FRONTEND=noninteractive  apt-get -y install nodejs \
     && docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr \
     && docker-php-ext-install gd mysqli opcache \
