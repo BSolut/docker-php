@@ -9,7 +9,6 @@ RUN echo deb http://httpredir.debian.org/debian stable main contrib >/etc/apt/so
         libfreetype6-dev \
         libjpeg62-turbo-dev \
         libmcrypt-dev \
-        libpng12-dev \
         zlib1g-dev \
         libgeoip-dev \
         python \
