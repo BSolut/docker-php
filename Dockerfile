@@ -13,4 +13,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
 COPY *.sh /
 RUN chmod u+rwx /*.sh
 
+ENV QT_QPA_PLATFORM=offscreen
+
 ENTRYPOINT [ "/run2.sh" ]
