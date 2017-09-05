@@ -4,7 +4,9 @@ ENV TERM=xterm
 
 RUN echo deb http://httpredir.debian.org/debian stable main contrib >/etc/apt/sources.list \
     && echo deb http://security.debian.org/ stable/updates main contrib >>/etc/apt/sources.list \
-    && curl -sL https://d2buw04m05mirl.cloudfront.net/setup_4.x | sed "s/deb.nodesource.com/d2buw04m05mirl.cloudfront.net/" | sed "s/\(deb\(-src\)\? http\)s/\1/" | bash - \
+    && echo 'deb http://apt.newrelic.com/debian/ newrelic non-free' | tee /etc/apt/sources.list.d/newrelic.list \
+    && curl -sS https://download.newrelic.com/548C16BF.gpg | apt-key add - \
+    && DEBIAN_FRONTEND=noninteractive apt-get update -y \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         debian-archive-keyring \
         libfreetype6-dev \
@@ -14,41 +16,25 @@ RUN echo deb http://httpredir.debian.org/debian stable main contrib >/etc/apt/so
         libgeoip-dev \
         python \
         locales \
-        expect-dev \
         geoip-bin geoip-database-contrib \
         nodejs \
         libgmp-dev \
         git\
-        redis-server redis-tools \
-    && curl -fsSL https://dev.mysql.com/get/mysql-apt-config_0.8.2-1_all.deb -o /tmp/mysql.deb \
-    && DEBIAN_FRONTEND=noninteractive MYSQL_SERVER_VERSION=mysql-5.6 dpkg -i /tmp/mysql.deb \
-    && rm /tmp/mysql.deb\
-    && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-community-server \
+        newrelic-php5 \
     && ln -s /usr/include/x86_64-linux-gnu/gmp.h /usr/include/gmp.h \
     && docker-php-ext-install -j$(nproc) iconv mcrypt \
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql mysqli bcmath mbstring zip gmp \
-    && DEBIAN_FRONTEND=noninteractive MYSQL_SERVER_VERSION=mysql-5.6 apt-get upgrade -y\
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    && apt-get update && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 RUN pecl install apcu apcu_bc-beta && docker-php-ext-enable apcu  && docker-php-ext-enable apc \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN pecl install xdebug && docker-php-ext-enable xdebug \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
 RUN pecl install geoip-beta && docker-php-ext-enable geoip \
     && echo "<?php var_dump(geoip_record_by_name('141.30.225.1')); " | php  | grep Dresden -cq || (echo "Geo not working" && exit 1) \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-COPY *.sh /
-
-RUN npm set registry https://npm.bsolut.com \
-    && npm config set always-auth true \
-    && /npm-exp.sh "npm login " docker insecure docker@bsolut.com \
-    && npm install node-tcp-relay pm2 less grunt gulp -g
 
 RUN echo -e "de_DE.UTF-8 UTF-8\nde_DE ISO-8859-1\nde_DE@euro ISO-8859-15\nen_US.UTF-8 UTF-8" >> /etc/locale.gen
 RUN locale-gen && /usr/sbin/update-locale LANG=en_US.UTF-8
@@ -59,15 +45,11 @@ ENV LC_ALL en_US.UTF-8
 
 RUN mv /usr/local/etc/php/conf.d/docker-php-ext-apc.ini /usr/local/etc/php/conf.d/zz-docker-php-ext-apc.ini
 
-VOLUME /var/lib/redis
-
-EXPOSE 9000 9001 9002 6379
+EXPOSE 9000
 
 ADD zzz-bsolut-fpm.conf /usr/local/etc/php-fpm.d/
 ADD bsolut-php.ini /usr/local/etc/php/conf.d/
-ADD bsolut-xdebug.ini /usr/local/etc/php/conf.d/
-ADD mysql-tmpfs.cnf /etc/mysql/mysql.conf.d/zzz-mysql-tmpfs.cnf
-RUN chmod go-w /etc/mysql/mysql.conf.d/zzz-mysql-tmpfs.cnf && chown mysql /etc/mysql/mysql.conf.d/zzz-mysql-tmpfs.cnf
+
 
 ADD auth-key /
 RUN \
