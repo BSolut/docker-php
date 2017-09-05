@@ -6,9 +6,17 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
         xfonts-75dpi \
         xserver-common \
         fontconfig \
-        wkhtmltopdf \
         unoconv \
-    && apt-get update && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    && DEBIAN_FRONTEND=noninteractive apt-get update && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+
+RUN curl -SLO "http://ftp.debian.org/debian/pool/main/libp/libpng/libpng12-0_1.2.50-2+deb8u3_amd64.deb" \
+    && DEBIAN_FRONTEND=noninteractive dpkg -i libpng12-0_1.2.50-2+deb8u3_amd64.deb \
+    && rm libpng12-0_1.2.50-2+deb8u3_amd64.deb
+
+RUN curl -SLO "https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.2.1/wkhtmltox-0.12.2.1_linux-jessie-amd64.deb" \
+    && DEBIAN_FRONTEND=noninteractive  dpkg -i wkhtmltox-0.12.2.1_linux-jessie-amd64.deb \
+    && rm wkhtmltox-0.12.2.1_linux-jessie-amd64.deb
 
 COPY *.sh /
 RUN chmod u+rwx /*.sh
