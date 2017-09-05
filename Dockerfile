@@ -1,4 +1,4 @@
-FROM bsolut/php:slim
+FROM bsolut/php
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y \
