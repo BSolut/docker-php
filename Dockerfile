@@ -66,8 +66,8 @@ EXPOSE 9000 9001 9002 6379
 ADD zzz-bsolut-fpm.conf /usr/local/etc/php-fpm.d/
 ADD bsolut-php.ini /usr/local/etc/php/conf.d/
 ADD bsolut-xdebug.ini /usr/local/etc/php/conf.d/
-ADD mysql-tmpfs.cnf /etc/mysql/mysql.conf.d/mysql-tmpfs.cnf
-RUN chmod go-w /etc/mysql/mysql.conf.d/mysql-tmpfs.cnf && chown mysql /etc/mysql/mysql.conf.d/mysql-tmpfs.cnf
+ADD mysql-tmpfs.cnf /etc/mysql/mysql.conf.d/zzz-mysql-tmpfs.cnf
+RUN chmod go-w /etc/mysql/mysql.conf.d/zzz-mysql-tmpfs.cnf && chown mysql /etc/mysql/mysql.conf.d/zzz-mysql-tmpfs.cnf
 
 ADD auth-key /
 RUN \
