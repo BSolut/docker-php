@@ -1,20 +1,13 @@
-# Docker for PHP Development - with pdf gen
-- Running a container will spawn an nginx at 9000 and a xdebug relay at 9001.
-- nginx is running from /var/www/html
+# Docker for PHP - with pdf gen
+- Running a container will spawn php at 9000
+- php is running from /var/www/html
 - running unoconv
 - Help https://github.com/wsargent/docker-cheat-sheet
-- a mysql tmpfs server to run unit tests against it without io issues, optionally a redis server
 
-### XDEBUG Forward
-```
-docker run -d -p 9001:9001 -p 9000:9000 bsolut/php
-npm install -g tcprelayc
-tcprelayc --host localhost --port 9000 --relayHost localhost --relayPort 9001 --numConn 10 
-```
 
 ### Run 
 ```
-docker run -p 9001:9001 -p 9000:9000 -v /Users/xxxx/php:/var/www/html yyyyyyy
+docker run -p 9000:9000 -v /Users/xxxx/php:/var/www/html yyyyyyy
 ```
 
 ### Cheat Sheet
@@ -22,31 +15,3 @@ docker run -p 9001:9001 -p 9000:9000 -v /Users/xxxx/php:/var/www/html yyyyyyy
 - tag `docker tag xxx  bsolut/php`
 - `docker run -it --entrypoint "/bin/bash" bsolut/php` 
 - `docker push bsolut/php`
-
-### TODO
-- Make 9002 xcache adm work in the same mem as php-adm.
-	Adm you need to run it in php-adm also.
-	Dirty workaround for projects inside php-fpm
-	```
-    $data = $_REQUEST;
-    ob_start();
-    chdir('/var/www/htdocs/cacher/');
-    global $module;
-    global $config;
-    global $strings;
-    if ($data[0] == 'edit') {
-        require_once './edit.php';
-    } else {
-        require_once './index.php';
-    }
-    $html = ob_get_contents();
-    ob_end_clean();
-    $html = str_replace('../common','http://localhost:9002/common',$html);
-    $html = str_replace('cacher.css','http://localhost:9002/cacher/cacher.css',$html);
-    $html = str_replace('.php','',$html);
-    echo $html;
-     ```
-
-### Credits
-- https://github.com/theasci/docker-mysql-tmpfs
-

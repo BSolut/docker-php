@@ -2,10 +2,8 @@
 #http://unix.stackexchange.com/questions/55558/how-can-i-kill-and-wait-for-background-processes-to-finish-in-a-shell-script-whe
 custom()
 {
-    run 'tcprelays' '--relayPort' '9001' '--servicePort' '8000'
     run 'unoconv' '--listener'
     run 'php-fpm'
-    run 'php' '-S' '0.0.0.0:9002' '-t' '/var/www/htdocs/'
     func()
     {
         local i=0
