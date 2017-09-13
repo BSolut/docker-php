@@ -23,4 +23,6 @@ RUN chmod u+rwx /*.sh
 
 ENV QT_QPA_PLATFORM=offscreen
 
+RUN mkdir -p /var/www/.cache/dconf && chmod a+rwx /var/www/.cache/dconf
+
 ENTRYPOINT [ "/run2.sh" ]
