@@ -2,30 +2,39 @@ FROM php:7.0-apache
 
 RUN a2enmod rewrite expires
 
-# install the PHP extensions we need, also nodejs for sshapi
-RUN     echo deb http://httpredir.debian.org/debian stable main contrib >>/etc/apt/sources.list \
+RUN echo deb http://httpredir.debian.org/debian stable main contrib >/etc/apt/sources.list \
     && echo deb http://security.debian.org/ stable/updates main contrib >>/etc/apt/sources.list \
-    && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y libpng12-dev libjpeg-dev locales supervisor git\
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y curl python-software-properties expect-dev \
-    && curl -sL https://d2buw04m05mirl.cloudfront.net/setup_4.x | sed "s/deb.nodesource.com/d2buw04m05mirl.cloudfront.net/" | sed "s/\(deb\(-src\)\? http\)s/\1/" | bash - \
-    && DEBIAN_FRONTEND=noninteractive  apt-get -y install nodejs \
-    && docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr \
-    && docker-php-ext-install gd mysqli opcache \
+    && apt-get update && apt-get install -my wget gnupg \
+    && curl -sL https://d2buw04m05mirl.cloudfront.net/setup_8.x | sed "s/deb.nodesource.com/d2buw04m05mirl.cloudfront.net/" | sed "s/\(deb\(-src\)\? http\)s/\1/" | bash - \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        debian-archive-keyring \
+        libfreetype6-dev \
+        libjpeg62-turbo-dev \
+        libmcrypt-dev \
+        zlib1g-dev \
+        libgeoip-dev \
+        python \
+        locales \
+        expect-dev \
+        geoip-bin geoip-database-contrib \
+        nodejs \
+        libgmp-dev \
+        git \
+        supervisor \
+    && docker-php-ext-install -j$(nproc) iconv mcrypt \
+    && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
+    && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql mysqli bcmath mbstring zip gmp \
     && DEBIAN_FRONTEND=noninteractive apt-get -y upgrade \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# set recommended PHP.ini settings
-# see https://secure.php.net/manual/en/opcache.installation.php
-RUN { \
-        echo 'opcache.memory_consumption=128'; \
-        echo 'opcache.interned_strings_buffer=8'; \
-        echo 'opcache.max_accelerated_files=4000'; \
-        echo 'opcache.revalidate_freq=0'; \
-        echo 'opcache.fast_shutdown=1'; \
-        echo 'opcache.enable_cli=1'; \
-    } > /usr/local/etc/php/conf.d/opcache-recommended.ini
-
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+RUN pecl install apcu apcu_bc-beta && docker-php-ext-enable apcu  && docker-php-ext-enable apc \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN pecl install geoip-beta && docker-php-ext-enable geoip \
+    && echo "<?php var_dump(geoip_record_by_name('141.30.225.1')); " | php  | grep Dresden -cq || (echo "Geo not working" && exit 1) \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ADD npm-exp.sh /npm-exp.sh
 RUN npm set registry https://npm.bsolut.com \
