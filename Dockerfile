@@ -52,7 +52,7 @@ RUN npm set registry https://npm.bsolut.com \
     && /npm-exp.sh "npm login " docker insecure docker@unikrn.com \
     && npm install pm2 less grunt gulp -g
 
-RUN echo -e "de_DE.UTF-8 UTF-8\nde_DE ISO-8859-1\nde_DE@euro ISO-8859-15\nen_US.UTF-8 UTF-8" >> /etc/locale.gen
+RUN echo "de_DE.UTF-8 UTF-8\nde_DE ISO-8859-1\nde_DE@euro ISO-8859-15\nen_US.UTF-8 UTF-8" >> /etc/locale.gen
 RUN locale-gen && /usr/sbin/update-locale LANG=en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US.UTF-8
@@ -67,6 +67,7 @@ ADD bsolut-php.ini /usr/local/etc/php/conf.d/
 ADD bsolut-xdebug.ini /usr/local/etc/php/conf.d/
 ADD mysql-tmpfs.cnf /etc/mysql/mysql.conf.d/zzz-mysql-tmpfs.cnf
 RUN chmod go-w /etc/mysql/mysql.conf.d/zzz-mysql-tmpfs.cnf && chown mysql /etc/mysql/mysql.conf.d/zzz-mysql-tmpfs.cnf
+
 
 ENTRYPOINT [ "/run.sh" ]
 
