@@ -1,16 +1,9 @@
 # Docker for PHP Development
-- Running a container will spawn an nginx at 9000 and a xdebug relay at 9001.
+- Running a container will spawn an nginx at 9000.
 - nginx is running from /var/www/html
 - running plain redis on default ports and with default config
 - Help https://github.com/wsargent/docker-cheat-sheet
 - a mysql tmpfs server to run unit tests against it without io issues
-
-### XDEBUG Forward
-```
-docker run -d -p 9001:9001 -p 9000:9000 bsolut/php
-npm install -g node-tcp-relay
-tcprelayc --host localhost --port 9000 --relayHost localhost --relayPort 9001 --numConn 10 
-```
 
 ### Run 
 ```
