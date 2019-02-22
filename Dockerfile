@@ -25,6 +25,7 @@ RUN echo deb http://httpredir.debian.org/debian stable main contrib >>/etc/apt/s
         libgmp-dev \
         git\
         redis-server redis-tools \
+    && apt-key adv --keyserver keys.gnupg.net --recv-keys 8C718D3B5072E1F5 \
     && curl -fsSL https://dev.mysql.com/get/mysql-apt-config_0.8.3-1_all.deb -o /tmp/mysql.deb \
     && DEBIAN_FRONTEND=noninteractive MYSQL_SERVER_VERSION=mysql-5.7 dpkg -i /tmp/mysql.deb \
     && rm /tmp/mysql.deb\
