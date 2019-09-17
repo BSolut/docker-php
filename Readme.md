@@ -7,7 +7,7 @@
 
 ### Run 
 ```
-docker run -p 9001:9001 -p 9000:9000 -v /Users/xxxx/php:/var/www/html yyyyyyy
+docker run -p 9000:9000 -v /Users/xxxx/php:/var/www/html yyyyyyy
 ```
 
 ### Cheat Sheet
@@ -16,29 +16,6 @@ docker run -p 9001:9001 -p 9000:9000 -v /Users/xxxx/php:/var/www/html yyyyyyy
 - `docker run -it --entrypoint "/bin/bash" bsolut/php` 
 - `docker push bsolut/php`
 
-### TODO
-- Make 9002 xcache adm work in the same mem as php-adm.
-	Adm you need to run it in php-adm also.
-	Dirty workaround for projects inside php-fpm
-	```
-    $data = $_REQUEST;
-    ob_start();
-    chdir('/var/www/htdocs/cacher/');
-    global $module;
-    global $config;
-    global $strings;
-    if ($data[0] == 'edit') {
-        require_once './edit.php';
-    } else {
-        require_once './index.php';
-    }
-    $html = ob_get_contents();
-    ob_end_clean();
-    $html = str_replace('../common','http://localhost:9002/common',$html);
-    $html = str_replace('cacher.css','http://localhost:9002/cacher/cacher.css',$html);
-    $html = str_replace('.php','',$html);
-    echo $html;
-     ```
 
 ### Credits
 - https://github.com/theasci/docker-mysql-tmpfs
