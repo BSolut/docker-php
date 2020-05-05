@@ -1,5 +1,12 @@
 FROM php:7.4-apache
 
+ENV TERM=xterm
+ENV DEBIAN_FRONTEND noninteractive
+ENV MYSQL_SERVER_VERSION mysql-5.7
+ENV COMPOSER_ALLOW_SUPERUSER 1
+ENV COMPOSER_HOME /home/composer
+ENV COMPOSER_PROCESS_TIMEOUT 600
+
 RUN a2enmod rewrite expires
 
 RUN echo deb http://httpredir.debian.org/debian stable main contrib >/etc/apt/sources.list \
@@ -16,25 +23,32 @@ RUN echo deb http://httpredir.debian.org/debian stable main contrib >/etc/apt/so
         python \
         locales \
         expect-dev \
-        geoip-bin geoip-database-contrib \
         nodejs \
+        npm \
         libgmp-dev \
         git \
+        libonig-dev \
+        libzip-dev \
         supervisor \
-    && docker-php-ext-install -j$(nproc) iconv mcrypt \
-    && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
+    && docker-php-ext-install -j$(nproc) iconv \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql mysqli bcmath mbstring zip gmp \
-    && DEBIAN_FRONTEND=noninteractive apt-get -y upgrade \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    && apt-get upgrade -y\
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+    && curl -sS https://unikrn-tools.s3-accelerate.amazonaws.com/docker/geo.tgz | tar -xz -C / \
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 RUN pecl install apcu apcu_bc-beta && docker-php-ext-enable apcu  && docker-php-ext-enable apc \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN pecl install geoip-beta && docker-php-ext-enable geoip \
-    && echo "<?php var_dump(geoip_record_by_name('141.30.225.1')); " | php  | grep Dresden -cq || (echo "Geo not working" && exit 1) \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+ADD auth-key /
+RUN \
+  chmod 600 /auth-key &&\
+  echo "IdentityFile /auth-key" >> /etc/ssh/ssh_config && \
+  echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
+
+ADD apache.conf /etc/supervisor/conf.d/apache.conf
 
 ADD npm-exp.sh /npm-exp.sh
 RUN npm set registry https://npm.bsolut.com \
@@ -48,13 +62,6 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 
-ADD auth-key /
-RUN \
-  chmod 600 /auth-key &&\
-  echo "IdentityFile /auth-key" >> /etc/ssh/ssh_config && \
-  echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
-
-ADD apache.conf /etc/supervisor/conf.d/apache.conf
 
 EXPOSE 80 8080 3000
 
