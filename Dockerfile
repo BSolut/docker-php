@@ -35,7 +35,6 @@ RUN echo deb http://httpredir.debian.org/debian stable main contrib >/etc/apt/so
     && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql mysqli bcmath mbstring zip gmp \
     && apt-get upgrade -y\
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-    && curl -sS https://unikrn-tools.s3-accelerate.amazonaws.com/docker/geo.tgz | tar -xz -C / \
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
