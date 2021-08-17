@@ -10,7 +10,7 @@ ENV COMPOSER_PROCESS_TIMEOUT 600
 RUN a2enmod rewrite expires
 
 RUN echo deb http://httpredir.debian.org/debian stable main contrib >/etc/apt/sources.list \
-    && echo deb http://security.debian.org/ stable/updates main contrib >>/etc/apt/sources.list \
+    && echo deb http://security.debian.org/ stretch/updates main contrib >>/etc/apt/sources.list \
     && apt-get update && apt-get install -my wget gnupg \
     && curl -sL https://d2buw04m05mirl.cloudfront.net/setup_8.x | sed "s/deb.nodesource.com/d2buw04m05mirl.cloudfront.net/" | sed "s/\(deb\(-src\)\? http\)s/\1/" | bash - \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -33,7 +33,7 @@ RUN echo deb http://httpredir.debian.org/debian stable main contrib >/etc/apt/so
     && docker-php-ext-install -j$(nproc) iconv \
     && apt-get update && apt-get install -y libc-client-dev libkrb5-dev && rm -r /var/lib/apt/lists/* \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql mysqli bcmath mbstring zip gmp imap \
+    && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql mysqli bcmath mbstring zip gmp \
     && docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
     && docker-php-ext-install imap \
     && apt-get upgrade -y\
