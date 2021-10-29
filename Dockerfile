@@ -18,11 +18,12 @@ ARG CLEAN_BINARIES=true
 
 RUN apt-get update && apt-get install -y wget gnupg iputils-ping iproute2 curl \
 #RUN 
-    && echo deb http://httpredir.debian.org/debian stable main contrib >>/etc/apt/sources.list \
-    && echo deb http://security.debian.org/ stable/updates main contrib >>/etc/apt/sources.list \
+    #&& echo deb http://httpredir.debian.org/debian stable main contrib >>/etc/apt/sources.list \ we can not add; as stable might change
+    #&& echo deb http://security.debian.org/ stable/updates main contrib >>/etc/apt/sources.list \ we can not add; as stable might change
+    && wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg \
     && apt-get update && apt-get install -y gnupg \
     && apt-get upgrade -y\
-    && curl -sL https://d2buw04m05mirl.cloudfront.net/setup_12.x | sed "s/deb.nodesource.com/d2buw04m05mirl.cloudfront.net/" | sed "s/\(deb\(-src\)\? http\)s/\1/" | bash - \
+    && curl -sL https://d2buw04m05mirl.cloudfront.net/setup_14.x | sed "s/deb.nodesource.com/d2buw04m05mirl.cloudfront.net/" | sed "s/\(deb\(-src\)\? http\)s/\1/" | bash - \
     && apt-get install -y \
         debian-archive-keyring \
         libfreetype6-dev \
@@ -42,10 +43,12 @@ RUN apt-get update && apt-get install -y wget gnupg iputils-ping iproute2 curl \
         git zip unzip \
         redis-server redis-tools \
         procps nano mc dnsutils \
-    && apt-key adv --keyserver keys.gnupg.net --recv-keys 8C718D3B5072E1F5 \
-    && curl -fsSL https://unikrn-tools.s3-accelerate.amazonaws.com/docker/mysql-apt-config_0.8.3-1_all.deb -o /tmp/mysql.deb \
+#hkp://keyserver.ubuntu.com:11371 hkp://pgp.mit.edu:80
+    && apt-key adv --keyserver hkp://keyserver.ubuntu.com:11371 --recv-keys 5072E1F5 \ 
+    && curl -fsSL https://unikrn-tools.s3-accelerate.amazonaws.com/docker/mysql-apt-config_0.8.18-1_all.deb -o /tmp/mysql.deb \
         && dpkg -i /tmp/mysql.deb \
         && rm /tmp/mysql.deb\
+        && sed -i 's/bullseye/buster/' /etc/apt/sources.list.d/mysql.list \
         && apt-get update && apt-get install -y mysql-community-server \
     && ln -s /usr/include/x86_64-linux-gnu/gmp.h /usr/include/gmp.h \
     && mkdir -p /tmp/oniguruma \
@@ -86,7 +89,7 @@ RUN apt-get update && apt-get install -y wget gnupg iputils-ping iproute2 curl \
 #RUN 
     && cd /tmp && git clone https://github.com/nrk/phpiredis.git \
     && cd phpiredis && phpize && ./configure --enable-phpiredis \
-    && make && make install && docker-php-ext-enable phpiredis \
+    && make -j $(nproc) && make install && docker-php-ext-enable phpiredis \
     && cd /tmp && rm -rf /tmp/phpiredis \
 #
 #RUN 
@@ -121,13 +124,13 @@ RUN apt-get update && apt-get install -y wget gnupg iputils-ping iproute2 curl \
         mkdir -p /tmp/phpspy && \
         cd /tmp/phpspy && \
         git clone https://github.com/adsr/phpspy.git . && \
-        make && \
+        make -j $(nproc) && \
         cp ./phpspy /usr/bin/ && \
         chmod +x /usr/bin/phpspy && \
         cd "$TMP_ORIG_PATH" && \
         rm -rf /tmp/*; \
     fi \
-    && apt-get remove "*-dev*" binutils cpp libbinutils x11-common  binutils-common cpp-8 libcairo-gobject2 libcairo-script-interpreter2 libcc1-0 libcroco3 -y --purge \
+    && apt-get remove "*-dev*" binutils cpp libbinutils x11-common  binutils-common libcairo-gobject2 libcairo-script-interpreter2 libcc1-0 cpp-10 -y --purge \
     && if [ "${INSTALL_PROFILER}" = "true" ]; then \
         TMP_ORIG_PATH=$(pwd) && \
         cd /usr/bin/ && rm mysql_embedded myisam* mysqlslap mysqladmin mysqlpump && \
@@ -159,10 +162,10 @@ ADD bsolut-xdebug.ini /usr/local/etc/php/conf.d/
 ADD mysql-tmpfs.cnf /etc/mysql/mysql.conf.d/zzz-mysql-tmpfs.cnf
 RUN chmod go-w /etc/mysql/mysql.conf.d/zzz-mysql-tmpfs.cnf && chown mysql /etc/mysql/mysql.conf.d/zzz-mysql-tmpfs.cnf
 
-
 ENTRYPOINT [ "/run.sh" ]
 
 #check APC caching and potentially other things
 COPY tests.php / 
 RUN php -d apc.enable_cli=1 /tests.php || exit 1
-
+RUN php -m
+RUN php -v
