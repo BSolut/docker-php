@@ -1,4 +1,4 @@
-TAG="bsolut/php:php74-small"
+TAG="bsolut/php:php74"
 build:
 	docker build . --pull -t ${TAG}
 
