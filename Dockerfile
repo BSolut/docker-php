@@ -45,6 +45,7 @@ RUN apt-get update && apt-get install -y wget gnupg iputils-ping iproute2 curl \
         procps nano mc dnsutils \
 #hkp://keyserver.ubuntu.com:11371 hkp://pgp.mit.edu:80
     && apt-key adv --keyserver hkp://keyserver.ubuntu.com:11371 --recv-keys 5072E1F5 \ 
+    && apt-key adv --keyserver hkp://keyserver.ubuntu.com:11371 --recv-keys 467B942D3A79BD29 \ 
     && curl -fsSL https://unikrn-tools.s3-accelerate.amazonaws.com/docker/mysql-apt-config_0.8.18-1_all.deb -o /tmp/mysql.deb \
         && dpkg -i /tmp/mysql.deb \
         && rm /tmp/mysql.deb\
