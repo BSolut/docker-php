@@ -16,6 +16,8 @@ ENV COMPOSER_PROCESS_TIMEOUT 600
 ARG INSTALL_PROFILER=true
 ARG CLEAN_BINARIES=true
 
+RUN php -v
+
 RUN apt-get update && apt-get install -y wget gnupg iputils-ping iproute2 curl \
 #RUN 
     #&& echo deb http://httpredir.debian.org/debian stable main contrib >>/etc/apt/sources.list \ we can not add; as stable might change
