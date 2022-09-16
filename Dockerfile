@@ -105,7 +105,7 @@ RUN apt-get update && apt-get install -y wget gnupg iputils-ping iproute2 curl \
     && mv /usr/local/etc/php/conf.d/docker-php-ext-apc.ini /usr/local/etc/php/conf.d/zz-docker-php-ext-apc.ini \
 #
 #RUN 
-    && pecl install xdebug-beta && docker-php-ext-enable xdebug \
+    && pecl install xdebug && docker-php-ext-enable xdebug \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
 #
 #RUN 
