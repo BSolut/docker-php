@@ -1,6 +1,9 @@
-TAG="bsolut/php:php74"
+TAG="bsolut/php:php81"
 build:
 	docker build . --pull -t ${TAG}
+
+build-debug:
+	docker --debug build . --pull -t ${TAG}
 
 push:
 	docker push ${TAG}

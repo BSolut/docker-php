@@ -1,8 +1,8 @@
-FROM php:7.4-fpm
+FROM php:8.1-fpm
 
 ENV TERM=xterm
 ENV DEBIAN_FRONTEND noninteractive
-ENV MYSQL_SERVER_VERSION mysql-5.7
+ENV MYSQL_SERVER_VERSION mysql-8.0
 ENV COMPOSER_ALLOW_SUPERUSER 1
 ENV COMPOSER_HOME /home/composer
 ENV COMPOSER_PROCESS_TIMEOUT 600
@@ -18,14 +18,14 @@ ARG CLEAN_BINARIES=true
 
 RUN php -v
 
+COPY mysql-apt-config_0.8.25-1_all.deb /tmp/mysql-apt-config_0.8.25-1_all.deb
+COPY onig-6.9.9.tar.gz /tmp/onig-6.9.9.tar.gz
+
 RUN apt-get update && apt-get install -y wget gnupg iputils-ping iproute2 curl \
-#RUN 
-    #&& echo deb http://httpredir.debian.org/debian stable main contrib >>/etc/apt/sources.list \ we can not add; as stable might change
-    #&& echo deb http://security.debian.org/ stable/updates main contrib >>/etc/apt/sources.list \ we can not add; as stable might change
+#RUN
     && wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg \
     && apt-get update && apt-get install -y gnupg \
     && apt-get upgrade -y\
-    && curl -sL https://d2buw04m05mirl.cloudfront.net/setup_14.x | sed "s/deb.nodesource.com/d2buw04m05mirl.cloudfront.net/" | sed "s/\(deb\(-src\)\? http\)s/\1/" | bash - \
     && apt-get install -y \
         debian-archive-keyring \
         libfreetype6-dev \
@@ -39,39 +39,40 @@ RUN apt-get update && apt-get install -y wget gnupg iputils-ping iproute2 curl \
         libmagickwand-dev libmagickcore-dev imagemagick \
         libsodium-dev \
         libhiredis-dev \
-        python \
         locales \
-        nodejs \
+        python3 \
         git zip unzip \
         redis-server redis-tools \
         procps nano mc dnsutils \
-#hkp://keyserver.ubuntu.com:11371 hkp://pgp.mit.edu:80
-    && apt-key adv --keyserver hkp://keyserver.ubuntu.com:11371 --recv-keys 5072E1F5 \ 
-    && apt-key adv --keyserver hkp://keyserver.ubuntu.com:11371 --recv-keys 467B942D3A79BD29 \ 
-    && curl -fsSL https://unikrn-tools.s3-accelerate.amazonaws.com/docker/mysql-apt-config_0.8.18-1_all.deb -o /tmp/mysql.deb \
-        && dpkg -i /tmp/mysql.deb \
-        && rm /tmp/mysql.deb\
-        && sed -i 's/bullseye/buster/' /etc/apt/sources.list.d/mysql.list \
+        lsb-release \
+    && apt-key adv --keyserver hkp://keyserver.ubuntu.com:11371 --recv-keys 5072E1F5 \
+    && apt-key adv --keyserver hkp://keyserver.ubuntu.com:11371 --recv-keys 467B942D3A79BD29 \
+    && dpkg -i /tmp/mysql-apt-config_0.8.25-1_all.deb \
+        && rm /tmp/mysql-apt-config_0.8.25-1_all.deb\
+        && sed -i 's/bookworm/bullseye/' /etc/apt/sources.list.d/mysql.list \
+        && curl -fsSL https://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.1_1.1.1n-0+deb11u5_amd64.deb -o /tmp/ssl.deb \
+        && dpkg -i /tmp/ssl.deb \
+        && rm /tmp/ssl.deb \
         && apt-get update && apt-get install -y mysql-community-server \
     && ln -s /usr/include/x86_64-linux-gnu/gmp.h /usr/include/gmp.h \
+#    && echo hi
+#RUN echo ho \
     && mkdir -p /tmp/oniguruma \
         && TMP_ORIG_PATH=$(pwd) \
         && cd /tmp/oniguruma \
-        && curl -Ls https://unikrn-tools.s3-accelerate.amazonaws.com/docker/onig-6.9.4.tar.gz | tar xzC /tmp/oniguruma --strip-components=1 \
+        && tar xzf /tmp/onig-6.9.9.tar.gz --strip-components=1 \
         && ./configure --prefix=/usr/local \
         && make -j $(nproc) \
         && make install \
         && cd "$TMP_ORIG_PATH" \
+        && rm /tmp/onig-6.9.9.tar.gz \
     && docker-php-ext-install -j$(nproc) iconv \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql mysqli bcmath mbstring bz2 zip gmp soap intl sodium sysvmsg sysvsem sysvshm ffi posix opcache shmop pcntl sockets exif \
+    && apt install libmaxminddb0 libmaxminddb-dev mmdb-bin -y \
+    && apt autoremove --purge -y \
     && apt-get upgrade -y\
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-#RUN 
-    && curl -sS https://unikrn-tools.s3-accelerate.amazonaws.com/docker/geo.tgz | tar -xz -C / \
-#
-#VOLUME /home/composer - no volume to have the prestissimo ready
-#RUN 
+#RUN
     && EXPECTED_SIGNATURE=$(wget -q -O - https://composer.github.io/installer.sig) && \
     curl -s -f -L -o /tmp/composer-setup.php https://getcomposer.org/installer && \
     ACTUAL_SIGNATURE=$(php -r "echo hash_file('SHA384', '/tmp/composer-setup.php');") && \
@@ -83,43 +84,49 @@ RUN apt-get update && apt-get install -y wget gnupg iputils-ping iproute2 curl \
     php /tmp/composer-setup.php --no-ansi --install-dir=/usr/bin --filename=composer && \
     rm -rf /tmp/* /var/tmp/* && \
     composer --ansi --version --no-interaction \
-#composer 2.x -> not needed    composer global require hirak/prestissimo \
 #
-#RUN 
-    && pecl install uuid && docker-php-ext-enable uuid \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-#
-#RUN 
+#RUN
     && cd /tmp && git clone https://github.com/nrk/phpiredis.git \
     && cd phpiredis && phpize && ./configure --enable-phpiredis \
     && make -j $(nproc) && make install && docker-php-ext-enable phpiredis \
     && cd /tmp && rm -rf /tmp/phpiredis \
 #
-#RUN 
+#RUN
+    && pecl install uuid && docker-php-ext-enable uuid \
+    && pecl install zstd && docker-php-ext-enable zstd \
     && pecl install redis && docker-php-ext-enable redis \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
 #
-#RUN 
-    && pecl install apcu apcu_bc-beta && docker-php-ext-enable apcu  && docker-php-ext-enable apc \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-    && mv /usr/local/etc/php/conf.d/docker-php-ext-apc.ini /usr/local/etc/php/conf.d/zz-docker-php-ext-apc.ini \
+#RUN
+    && pecl install apcu && docker-php-ext-enable apcu \
+ #RUN
+    && cd /tmp && git clone https://github.com/xdebug/xdebug.git \
+    && cd xdebug && phpize && ./configure \
+    && make -j$(nproc) && make install && docker-php-ext-enable xdebug \
+    && cd /tmp && rm -rf /tmp/xdebug \
 #
-#RUN 
-    && pecl install xdebug && docker-php-ext-enable xdebug \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+#https://github.com/wp-statistics/GeoLite2-City
+#RUN
+    && curl -sS https://cdn.jsdelivr.net/npm/geolite2-city@1.0.0/GeoLite2-City.mmdb.gz | gunzip  | dd of=/GeoLite2-City.mmdb \
+    && pecl install maxminddb && docker-php-ext-enable maxminddb \
+    && (echo "<?php \
+use MaxMind\Db\Reader; \
+\$ipAddress='141.30.225.1';\
+\$databaseFile = '/GeoLite2-City.mmdb';\
+\$reader = new Reader(\$databaseFile);\
+print_r(\$reader->get(\$ipAddress));\
+print_r(\$reader->getWithPrefixLen(\$ipAddress));\
+\$reader->close();\
+     " | php | grep Dresden -cq || (echo "Geo not working" && exit 1)) \
 #
-#RUN 
-    && rm -rf /usr/share/GeoIP && ln -s /var/lib/geoip-database-contrib /usr/share/GeoIP \
-    && update-alternatives --install /usr/share/GeoIP/GeoIPCity.dat GeoIPCity.dat /usr/share/GeoIP/GeoLiteCity.dat 50 \
-    && pecl install geoip-beta && docker-php-ext-enable geoip \
-    && echo "<?php var_dump(geoip_record_by_name('141.30.225.1')); " | php  | grep Dresden -cq || (echo "Geo not working" && exit 1) \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+#RUN
+    && cd /tmp && git clone https://github.com/Imagick/imagick.git \
+    && cd imagick && phpize && ./configure \
+    && make -j$(nproc) && make install && docker-php-ext-enable imagick \
+    && cd /tmp && rm -rf /tmp/imagick \
 #
-#RUN 
-    && pecl install imagick && docker-php-ext-enable imagick \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-#
-#RUN 
+
+#RUN
     && if [ "${INSTALL_PROFILER}" = "true" ]; then \
         # install profiler
         TMP_ORIG_PATH=$(pwd) && \
@@ -133,21 +140,24 @@ RUN apt-get update && apt-get install -y wget gnupg iputils-ping iproute2 curl \
         cd "$TMP_ORIG_PATH" && \
         rm -rf /tmp/*; \
     fi \
-    && apt-get remove "*-dev*" binutils cpp libbinutils x11-common  binutils-common libcairo-gobject2 libcairo-script-interpreter2 libcc1-0 cpp-10 -y --purge \
+    && apt-get remove "*-dev*" binutils cpp libbinutils x11-common  binutils-common libcairo-gobject2 libcairo-script-interpreter2 libcc1-0 cpp-12 -y --purge \
     && if [ "${INSTALL_PROFILER}" = "true" ]; then \
         TMP_ORIG_PATH=$(pwd) && \
-        cd /usr/bin/ && rm mysql_embedded myisam* mysqlslap mysqladmin mysqlpump && \
-        rm /usr/sbin/mysqld-debug && \
+        cd /usr/bin/ && rm -f mysql_embedded myisam* mysqlslap mysqladmin mysqlpump && \
+        rm -f /usr/sbin/mysqld-debug && \
         cd "$TMP_ORIG_PATH" && \
         echo "binaries cleaned"; \
-    fi
+    fi \
+    && echo "DONE"
+
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && NODE_MAJOR=18 && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update && apt-get install nodejs -y \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY *.sh /
 
 RUN npm install pm2 -g
-
-#set pm2 config after - faster install, no npm proxy
-COPY .npmrc /root
 
 RUN echo "de_DE.UTF-8 UTF-8\nde_DE ISO-8859-1\nde_DE@euro ISO-8859-15\nen_US.UTF-8 UTF-8" >> /etc/locale.gen
 RUN locale-gen && /usr/sbin/update-locale LANG=en_US.UTF-8
@@ -168,7 +178,7 @@ RUN chmod go-w /etc/mysql/mysql.conf.d/zzz-mysql-tmpfs.cnf && chown mysql /etc/m
 ENTRYPOINT [ "/run.sh" ]
 
 #check APC caching and potentially other things
-COPY tests.php / 
+COPY tests.php /
 RUN php -d apc.enable_cli=1 /tests.php || exit 1
 RUN php -m
 RUN php -v
