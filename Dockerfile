@@ -18,7 +18,7 @@ ARG CLEAN_BINARIES=true
 
 RUN php -v
 
-COPY mysql-apt-config_0.8.25-1_all.deb /tmp/mysql-apt-config_0.8.25-1_all.deb
+COPY mysql-apt-config_0.8.29-1_all.deb /tmp/mysql-apt-config_0.8.29-1_all.deb
 COPY onig-6.9.9.tar.gz /tmp/onig-6.9.9.tar.gz
 
 RUN apt-get update && apt-get install -y wget gnupg iputils-ping iproute2 curl \
@@ -45,10 +45,9 @@ RUN apt-get update && apt-get install -y wget gnupg iputils-ping iproute2 curl \
         redis-server redis-tools \
         procps nano mc dnsutils \
         lsb-release \
-    && apt-key adv --keyserver hkp://keyserver.ubuntu.com:11371 --recv-keys 5072E1F5 \
-    && apt-key adv --keyserver hkp://keyserver.ubuntu.com:11371 --recv-keys 467B942D3A79BD29 \
-    && dpkg -i /tmp/mysql-apt-config_0.8.25-1_all.deb \
-        && rm /tmp/mysql-apt-config_0.8.25-1_all.deb\
+    && apt-key adv --keyserver hkp://keyserver.ubuntu.com:11371 --recv-keys B7B3B788A8D3785C \
+    && dpkg -i /tmp/mysql-apt-config_0.8.29-1_all.deb \
+        && rm /tmp/mysql-apt-config_0.8.29-1_all.deb \
         && sed -i 's/bookworm/bullseye/' /etc/apt/sources.list.d/mysql.list \
         && curl -fsSL https://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.1_1.1.1n-0+deb11u5_amd64.deb -o /tmp/ssl.deb \
         && dpkg -i /tmp/ssl.deb \
@@ -90,6 +89,11 @@ RUN apt-get update && apt-get install -y wget gnupg iputils-ping iproute2 curl \
     && cd phpiredis && phpize && ./configure --enable-phpiredis \
     && make -j $(nproc) && make install && docker-php-ext-enable phpiredis \
     && cd /tmp && rm -rf /tmp/phpiredis \
+#RUN
+    && cd /tmp && git clone https://github.com/wikimedia/mediawiki-php-excimer.git \
+    && cd mediawiki-php-excimer && phpize && ./configure \
+    && make -j $(nproc) && make install && docker-php-ext-enable excimer \
+    && cd /tmp && rm -rf /tmp/mediawiki-php-excimer \
 #
 #RUN
     && pecl install uuid && docker-php-ext-enable uuid \

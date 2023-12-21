@@ -14,9 +14,6 @@ innodb_buffer_pool_size = 96M
 innodb_buffer_pool_instances = 1
 innodb_flush_log_at_trx_commit = 2
 innodb_doublewrite = 0
-innodb_file_format = Barracuda
 innodb_log_file_size = 2M
-innodb_large_prefix
-innodb_support_xa = 0
 
 datadir	= /dev/shm/mysql

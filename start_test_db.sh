@@ -1,4 +1,8 @@
 #!/bin/bash
+mysql_ready() {
+    mysql -e "select 1" > /dev/null 2>&1
+}
+
 echo "starting tmpfs mysql server, creating test database"
 mkdir /dev/shm/mysql/
 cp -R /var/lib/mysql/* /dev/shm/mysql/
